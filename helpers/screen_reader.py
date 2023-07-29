@@ -11,7 +11,7 @@ from deep_translator import (GoogleTranslator,
                              MyMemoryTranslator,
                              LingueeTranslator)
 
-#pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r'/opt/homebrew/Cellar/tesseract/5.3.2/bin/tesseract'
 
 
 class Worker(QtCore.QObject):

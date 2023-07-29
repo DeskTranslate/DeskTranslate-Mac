@@ -1,19 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import ctypes
-
-import logging
 import sys
 from threading import Thread
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QPixmap
-from PyQt6.QtWidgets import QColorDialog, QSizePolicy, QMessageBox, QLabel, QWidget, QApplication
+from PyQt6.QtWidgets import QColorDialog, QSizePolicy, QMessageBox, QLabel, QApplication
 
-from screen_reader import MyWidget, Worker
-from splashscreen import SplashScreenWindow
-from translate import Ui_translateWindow
+from helpers import screen_reader, splashscreen, translate
 
 with open("languageLists/fromLanguage.csv") as f:
     arr = [line.split(',') for line in f]
@@ -71,7 +66,7 @@ class Ui_MainWindow(object):
             self.ui.close()
             self.thread.join()
 
-        self.ui = Ui_translateWindow(self.opacity_slider)
+        self.ui = translate.Ui_translateWindow(self.opacity_slider)
         self.ui.show()
         img_lang = self.frm_dropdown.currentText()
         trans_lang = self.to_dropdown.currentText()
@@ -79,7 +74,7 @@ class Ui_MainWindow(object):
         trans_code = dict1.get(trans_lang)
         print(img_code, trans_code)
         is_text2speech_enabled = self.checkBox.isChecked()
-        self.worker = Worker(snip_window,
+        self.worker = screen_reader.Worker(snip_window,
                              img_code, trans_code,
                              is_text2speech_enabled,
                              self.ui, self.translator_engine,
@@ -502,7 +497,7 @@ if __name__ == "__main__":
         print("👋")
 
     # Snip window
-    snip_window = MyWidget()
+    snip_window = screen_reader.MyWidget()
     snip_window.hide()
     borders_selected = False
 
@@ -513,7 +508,7 @@ if __name__ == "__main__":
     MainWindow.hide()
 
     # SplashScreenWindow
-    splash_screen_window = SplashScreenWindow(MainWindow)
+    splash_screen_window = splashscreen.SplashScreenWindow(MainWindow)
     splash_screen_window.show()
     QTimer.singleShot(2500, splash_screen_window.close)
 
