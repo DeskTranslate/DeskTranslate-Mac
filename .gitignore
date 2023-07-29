@@ -1,5 +1,2 @@
 .idea/
 __pycache__
-/build/
-/dist
-setup.py
