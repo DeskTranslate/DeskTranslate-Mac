@@ -20,7 +20,7 @@ This version is for macOS users!
 
 ### Using our installer
 
-Releases of DeskTranslate can be found [here](https://github.com/DeskTranslate/DeskTranslate/releases/tag/1).  
+Releases of DeskTranslate can be found [here](https://github.com/DeskTranslate/DeskTranslate-Mac/releases/tag/v1.0).  
 
 ### Downloading from our repo [for developers]
 
