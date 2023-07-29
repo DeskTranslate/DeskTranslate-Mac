@@ -1,1 +1,0 @@
-# DeskTranslate-Mac
