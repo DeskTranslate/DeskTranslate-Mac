@@ -22,7 +22,7 @@ This version is for macOS users!
 
 Releases of DeskTranslate can be found [here](https://github.com/DeskTranslate/DeskTranslate/releases/tag/1).  
 
-### Downloading from our repo
+### Downloading from our repo [for developers]
 
 ![](images/githubDownload.png)
 
@@ -37,6 +37,13 @@ Releases of DeskTranslate can be found [here](https://github.com/DeskTranslate/D
 
 5. Install Tesseract: 
 `brew install tesseract` and `brew install tesseract-lang`
+
+> Note: The script searches for version `5.3.2` of tesseract
+> If required, change the version number in `helpers/screen_reader.py`
+```python
+#helpers/screen_reader.py
+pytesseract.pytesseract.tesseract_cmd = r'/opt/homebrew/Cellar/tesseract/5.3.2/bin/tesseract'
+```
 
 6. Next, enter the following command to start the program:
 `python main.py`
