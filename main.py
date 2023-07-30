@@ -127,7 +127,7 @@ class Ui_MainWindow(object):
         '''
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(430, 275)
-        MainWindow.setWindowIcon(QtGui.QIcon("./images/DeskTranslate.ico"))
+        MainWindow.setWindowIcon(QtGui.QIcon("./images/DeskTranslate.icns"))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 

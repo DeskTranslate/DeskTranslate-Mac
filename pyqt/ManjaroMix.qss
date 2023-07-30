@@ -342,15 +342,15 @@ QDateEdit {
 	border-color: #4fa08b;
 }
 QFontComboBox {
-	color: #d3dae3;
-	background-color: #222b2e;
+	color: #222b2e;
+	background-color: #d3dae3;
 	border-width: 1px;
 	border-style: solid;
 	border-color: #4fa08b;
 }
 QComboBox {
-	color: #d3dae3;
-	background-color: #222b2e;
+	color: #222b2e;
+	background-color: #d3dae3;
 	border-width: 1px;
 	border-style: solid;
 	border-color: #4fa08b;
