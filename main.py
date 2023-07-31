@@ -185,6 +185,7 @@ class Ui_MainWindow(object):
 
         # add language list for original text
         self.frm_dropdown.addItems(list_frm2)
+        self.frm_dropdown.setCurrentText("English")
 
         font = QtGui.QFont()
         font.setPointSize(12)
@@ -217,6 +218,7 @@ class Ui_MainWindow(object):
 
         # add language list for translation text
         self.to_dropdown.addItems(list_frm1)
+        self.to_dropdown.setCurrentText("portuguese")
 
         self.horizontalLayout.addWidget(self.select_borders_btn)
         self.translate_btn = QtWidgets.QPushButton(self.tab_translate)
@@ -513,5 +515,5 @@ if __name__ == "__main__":
     QTimer.singleShot(2500, splash_screen_window.close)
 
     # Run the application!
-    #sys.exit(app.exec_())
-    app.exec()
+    sys.exit(app.exec())
+    #app.exec()

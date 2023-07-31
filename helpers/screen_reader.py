@@ -59,8 +59,6 @@ class Worker(QtCore.QObject):
             img = ImageGrab.grab(bbox=(self.x1, self.y1, self.x2, self.y2))
             img = cv2.cvtColor(np.array(img), cv2.COLOR_BGR2GRAY)
 
-            self.stop_running()
-
             new_extracted_text = pytesseract.image_to_string(img, lang=self.image_lang_code).strip()
             new_extracted_text = " ".join(new_extracted_text.split())
             print(f"EXTRACTED TEXT: [{new_extracted_text}]")
@@ -111,8 +109,7 @@ class Worker(QtCore.QObject):
                     self.engine.say(translated_text)
                     #time.sleep(2)
 
-            self.start_running()
-            #time.sleep(1)
+            time.sleep(0.5)
 
 
 class MyWidget(QtWidgets.QWidget):
