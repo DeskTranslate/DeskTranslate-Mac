@@ -76,7 +76,7 @@ class Ui_MainWindow(object):
         is_text2speech_enabled = self.checkBox.isChecked()
         self.worker = screen_reader.Worker(snip_window,
                              img_code, trans_code,
-                             is_text2speech_enabled,
+                             self.checkBox.isChecked(),
                              self.ui, self.translator_engine,
                              img_lang, trans_lang)
         self.ui.set_worker(self.worker)

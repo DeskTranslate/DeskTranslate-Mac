@@ -1,23 +1,38 @@
 import time
+import json
 
 import cv2
 import numpy as np
 import pytesseract
-import pyttsx3
 from PIL import ImageGrab
 from PyQt6 import QtWidgets, QtCore, QtGui
+from PyQt6.QtTextToSpeech import QTextToSpeech
 from deep_translator import (GoogleTranslator,
                              PonsTranslator,
                              MyMemoryTranslator,
                              LingueeTranslator)
 
 pytesseract.pytesseract.tesseract_cmd = r'/opt/homebrew/Cellar/tesseract/5.3.2/bin/tesseract'
+locales = open('languageLists/locales.json', 'r')
+locales_json = json.load(locales)
+locales.close()
+
+
+def get_locale(lang):
+    output = None
+    if 'zh' in lang:
+        output = lang.replace('-', '_')
+    if lang in locales_json:
+        output = lang + '_' + locales_json[lang][0]
+
+    return QtCore.QLocale(output)
 
 
 class Worker(QtCore.QObject):
     def __init__(self, snip_window, image_lang_code, trans_lang_code, is_text2speech_enabled, ui, translator_engine,
                  img_lang, trans_lang):
         super().__init__()
+        self.engine = None
         self.x1 = min(snip_window.begin.x(), snip_window.end.x())
         self.y1 = min(snip_window.begin.y(), snip_window.end.y())
         self.x2 = max(snip_window.begin.x(), snip_window.end.x())
@@ -35,10 +50,16 @@ class Worker(QtCore.QObject):
     def stop_running(self):
         self.running = False
 
+    def start_running(self):
+        self.running = True
+
     def run(self):
         while self.running:
+            print(f'enabled: {self.is_text2speech_enabled}')
             img = ImageGrab.grab(bbox=(self.x1, self.y1, self.x2, self.y2))
             img = cv2.cvtColor(np.array(img), cv2.COLOR_BGR2GRAY)
+
+            self.stop_running()
 
             new_extracted_text = pytesseract.image_to_string(img, lang=self.image_lang_code).strip()
             new_extracted_text = " ".join(new_extracted_text.split())
@@ -84,11 +105,14 @@ class Worker(QtCore.QObject):
 
                 self.ui.translated_text_label.setText(translated_text)
                 if self.is_text2speech_enabled:
-                    engine = pyttsx3.init()
-                    engine.say(translated_text)
-                    engine.runAndWait()
+                    print('🔊')
+                    self.engine = QTextToSpeech(QTextToSpeech.availableEngines()[0])
+                    self.engine.setLocale(get_locale(self.trans_lang_code))
+                    self.engine.say(translated_text)
+                    #time.sleep(2)
 
-            time.sleep(1)
+            self.start_running()
+            #time.sleep(1)
 
 
 class MyWidget(QtWidgets.QWidget):
