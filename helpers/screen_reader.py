@@ -11,6 +11,7 @@ from deep_translator import (GoogleTranslator,
                              PonsTranslator,
                              MyMemoryTranslator,
                              LingueeTranslator)
+import pyautogui
 
 pytesseract.pytesseract.tesseract_cmd = r'/opt/homebrew/Cellar/tesseract/5.3.2/bin/tesseract'
 locales = open('languageLists/locales.json', 'r')
@@ -52,6 +53,12 @@ class Worker(QtCore.QObject):
 
     def start_running(self):
         self.running = True
+
+    def sstop(self):
+        try:
+            self.engine.stop()
+        except AttributeError as e:
+            print(f"Unable to stop engine: {e}")
 
     def run(self):
         while self.running:
@@ -107,18 +114,15 @@ class Worker(QtCore.QObject):
                     self.engine = QTextToSpeech(QTextToSpeech.availableEngines()[0])
                     self.engine.setLocale(get_locale(self.trans_lang_code))
                     self.engine.say(translated_text)
-                    #time.sleep(2)
+                    # time.sleep(2)
 
-            time.sleep(0.5)
+            # time.sleep(0.5)
 
 
 class MyWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        screen = QtWidgets.QApplication.primaryScreen()
-        rect = screen.availableGeometry()
-        screen_width = rect.width()
-        screen_height = rect.height()
+        screen_width, screen_height = pyautogui.size()
         self.setGeometry(0, 0, screen_width, screen_height)
         self.setWindowTitle(' ')
         self.begin = QtCore.QPoint()
@@ -159,4 +163,4 @@ if __name__ == '__main__':
     )
     window.show()
     app.aboutToQuit.connect(app.deleteLater)
-    app.exec_()
+    app.exec()
