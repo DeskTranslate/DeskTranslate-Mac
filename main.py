@@ -3,12 +3,11 @@
 import sys
 from threading import Thread
 
-from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtCore import QTimer
+from PyQt6 import QtGui, QtWidgets, QtCore
 from PyQt6.QtGui import QPixmap
-from PyQt6.QtWidgets import QColorDialog, QSizePolicy, QMessageBox, QLabel, QApplication
+from PyQt6.QtWidgets import QColorDialog, QSizePolicy, QMessageBox, QLabel, QApplication, QSplashScreen
 
-from helpers import screen_reader, splashscreen, translate
+from helpers import screen_reader, translate
 
 with open("languageLists/fromLanguage.csv") as f:
     arr = [line.split(',') for line in f]
@@ -46,6 +45,10 @@ for i in range(0, length1):
 class Ui_MainWindow(object):
     translator_engine = "GoogleTranslator"
 
+    def __init__(self):
+        self.ui = None
+        self.thread = None
+
     def on_click_select_borders(self):
         global borders_selected
         borders_selected = True
@@ -53,6 +56,15 @@ class Ui_MainWindow(object):
             QtGui.QCursor(QtCore.Qt.CursorShape.CrossCursor)
         )
         snip_window.show()
+
+
+    def on_click_changeTranslateFunc(self):
+        if self.translate_btn.text() == "Translate":
+            self.translate_btn.setText("Close Window")
+            return True
+
+        self.translate_btn.setText("Translate")
+        return False
 
     def on_click_openTranslateWin(self):
         if not borders_selected:
@@ -66,6 +78,11 @@ class Ui_MainWindow(object):
             self.ui.close()
             self.thread.join()
 
+        if not self.on_click_changeTranslateFunc():
+            self.worker.sstop()
+            self.ui.close()
+            return None
+
         self.ui = translate.Ui_translateWindow(self.opacity_slider)
         self.ui.show()
         img_lang = self.frm_dropdown.currentText()
@@ -73,7 +90,6 @@ class Ui_MainWindow(object):
         img_code = dict.get(img_lang)
         trans_code = dict1.get(trans_lang)
         print(img_code, trans_code)
-        is_text2speech_enabled = self.checkBox.isChecked()
         self.worker = screen_reader.Worker(snip_window,
                              img_code, trans_code,
                              self.checkBox.isChecked(),
@@ -97,7 +113,10 @@ class Ui_MainWindow(object):
         self.opacity_2_label.setText(str(new_opacity_value))
 
         try:
-            self.ui.setWindowOpacity(self.opacity_slider.value() / 100)
+            #self.ui.set_opacity(self.opacity_slider.value())
+            self.ui.setStyleSheet(f"background-color:rgba(0, 0, 0, {self.opacity_slider.value() / 100});")
+            #self.ui.centralwidget.setWindowOpacity(self.opacity_slider.value() / 100)
+            #self.ui.setWindowOpacity(self.opacity_slider.value() / 100)
         except:
             print("Trying to edit opacity")
 
@@ -110,7 +129,7 @@ class Ui_MainWindow(object):
     def color_changed(self, color):
         print(color.name())
         try:
-            self.ui.translated_text_label.setStyleSheet("color: " + color.name() + ";")
+            self.ui.translated_text_label.setStyleSheet(f"color:{color.name()};")
         except:
             print("Trying to change color")
 
@@ -292,15 +311,11 @@ class Ui_MainWindow(object):
 
         self.gridLayout_3.addWidget(self.opacity_label, 1, 0, 1, 1)
         self.opacity_slider = QtWidgets.QSlider(self.tab_settings)
-        self.opacity_slider.setMaximumSize(QtCore.QSize(374, 16777215))
-        self.opacity_slider.setMaximum(100)
-        self.opacity_slider.setProperty("value", 100)
+        self.opacity_slider.setRange(0, 100)
+        self.opacity_slider.setValue(100)
         self.opacity_slider.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.opacity_slider.setObjectName("opacity_slider")
         self.gridLayout_3.addWidget(self.opacity_slider, 1, 1, 1, 1)
-
-        # opacity slider value changed
-        self.opacity_slider.valueChanged.connect(self.on_click_opacity_changed)
 
         self.opacity_2_label = QtWidgets.QLabel(self.tab_settings)
         self.opacity_2_label.setMaximumSize(QtCore.QSize(74, 16777215))
@@ -311,12 +326,14 @@ class Ui_MainWindow(object):
 
         self.gridLayout_3.addWidget(self.opacity_2_label, 1, 2, 1, 1)
 
+        self.opacity_slider.valueChanged.connect(self.on_click_opacity_changed)
+
         self.color_label = QtWidgets.QLabel(self.tab_settings)
         self.color_label.setMaximumSize(QtCore.QSize(74, 16777215))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.color_label.setFont(font)
-        self.color_label.setObjectName("opacity_label_2")
+        self.color_label.setObjectName("color_label")
 
         self.gridLayout_3.addWidget(self.color_label, 2, 0, 1, 1)
         self.select_color_btn = QtWidgets.QPushButton(self.tab_settings)
@@ -510,9 +527,13 @@ if __name__ == "__main__":
     MainWindow.hide()
 
     # SplashScreenWindow
-    splash_screen_window = splashscreen.SplashScreenWindow(MainWindow)
-    splash_screen_window.show()
-    QTimer.singleShot(2500, splash_screen_window.close)
+    #splash_screen_window = splashscreen.SplashScreenWindow(MainWindow)
+    pixmap = QPixmap("images/DeskTranslate.gif")
+    splash = QSplashScreen(pixmap)
+    splash.show()
+    MainWindow.show()
+    splash.finish(MainWindow)
+    #QtCore.QTimer.singleShot(2500, splash_screen_window.close)
 
     # Run the application!
     sys.exit(app.exec())

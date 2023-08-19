@@ -1,10 +1,7 @@
-import time
 import json
 
-import cv2
-import numpy as np
 import pytesseract
-from PIL import ImageGrab
+from PIL import ImageGrab, ImageOps
 from PyQt6 import QtWidgets, QtCore, QtGui
 from PyQt6.QtTextToSpeech import QTextToSpeech
 from deep_translator import (GoogleTranslator,
@@ -17,6 +14,8 @@ pytesseract.pytesseract.tesseract_cmd = r'/opt/homebrew/Cellar/tesseract/5.3.2/b
 locales = open('languageLists/locales.json', 'r')
 locales_json = json.load(locales)
 locales.close()
+
+mutex = QtCore.QMutex()
 
 
 def get_locale(lang):
@@ -62,9 +61,10 @@ class Worker(QtCore.QObject):
 
     def run(self):
         while self.running:
+            mutex.lock()
             print(f'enabled: {self.is_text2speech_enabled}')
             img = ImageGrab.grab(bbox=(self.x1, self.y1, self.x2, self.y2))
-            img = cv2.cvtColor(np.array(img), cv2.COLOR_BGR2GRAY)
+            img = ImageOps.grayscale(img)
 
             new_extracted_text = pytesseract.image_to_string(img, lang=self.image_lang_code).strip()
             new_extracted_text = " ".join(new_extracted_text.split())
@@ -114,9 +114,10 @@ class Worker(QtCore.QObject):
                     self.engine = QTextToSpeech(QTextToSpeech.availableEngines()[0])
                     self.engine.setLocale(get_locale(self.trans_lang_code))
                     self.engine.say(translated_text)
+
                     # time.sleep(2)
 
-            # time.sleep(0.5)
+            mutex.unlock()
 
 
 class MyWidget(QtWidgets.QWidget):
