@@ -2,9 +2,11 @@
 
 import pyperclip
 from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtWidgets import QMainWindow
+from PyQt6.QtGui import QMouseEvent
 
 
-class Ui_translateWindow(QtWidgets.QMainWindow):
+class Ui_translateWindow(QMainWindow):
     def copy_clipboard(self, event):
         text = self.translated_text_label.text().strip()
         print(f"Clipboard copy: [{text}]")
@@ -36,27 +38,30 @@ class Ui_translateWindow(QtWidgets.QMainWindow):
 
         self.setCentralWidget(self.centralwidget)
 
-        self.menubar = QtWidgets.QMenuBar(self)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 21))
-        self.menubar.setObjectName("menubar")
-
-        self.setMenuBar(self.menubar)
-
-        self.statusbar = QtWidgets.QStatusBar(self)
-        self.statusbar.setObjectName("statusbar")
-        self.setStatusBar(self.statusbar)
-
         self.retranslateUi()
         QtCore.QMetaObject.connectSlotsByName(self)
 
-        self.setWindowFlags(
-            QtCore.Qt.WindowType.Window |
-            QtCore.Qt.WindowType.CustomizeWindowHint |
-            QtCore.Qt.WindowType.WindowTitleHint |
-            QtCore.Qt.WindowType.WindowCloseButtonHint |
-            QtCore.Qt.WindowType.WindowStaysOnTopHint
-        )
-        self.setWindowOpacity(opacity_slider.value() / 100)
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
+        self.setStyleSheet("background-color:black;")
+
+    def mousePressEvent(self, event: QMouseEvent):
+        try:
+            self.oldPosition = event.globalPosition()
+            print(self.oldPosition)
+            print(type(self.oldPosition))
+        except AttributeError as e:
+            print(f'Cannot detect mouse press: {e}')
+
+    # action #2
+    def mouseMoveEvent(self, event: QMouseEvent):
+        try:
+            delta = event.globalPosition() - self.oldPosition
+            delta = delta.toPoint()
+            self.move(self.x() + delta.x(), self.y() + delta.y())
+            self.oldPosition = event.globalPosition()
+        except AttributeError as e:
+            print(f'Unable to move window: {e}')
 
     def set_worker(self, worker):
         self.worker = worker
