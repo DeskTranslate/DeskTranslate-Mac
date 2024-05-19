@@ -1,5 +1,6 @@
 import json
 import glob
+import threading
 
 import pytesseract
 from PIL import ImageGrab, ImageOps
@@ -25,11 +26,11 @@ def get_locale(lang):
         output = lang.replace('-', '_')
     if lang in locales_json:
         output = lang + '_' + locales_json[lang][0]
-
     return QtCore.QLocale(output)
 
-
 class Worker(QtCore.QObject):
+    finished = QtCore.pyqtSignal()
+
     def __init__(self, snip_window, image_lang_code, trans_lang_code, is_text2speech_enabled, ui, translator_engine,
                  img_lang, trans_lang):
         super().__init__()
@@ -56,70 +57,54 @@ class Worker(QtCore.QObject):
 
     def sstop(self):
         try:
-            self.engine.stop()
+            if self.engine:
+                self.engine.stop()
         except AttributeError as e:
             print(f"Unable to stop engine: {e}")
 
     def run(self):
         while self.running:
             mutex.lock()
-            print(f'enabled: {self.is_text2speech_enabled}')
-            img = ImageGrab.grab(bbox=(self.x1, self.y1, self.x2, self.y2))
-            img = ImageOps.grayscale(img)
+            try:
+                print(f'enabled: {self.is_text2speech_enabled}')
+                img = ImageGrab.grab(bbox=(self.x1, self.y1, self.x2, self.y2))
+                img = ImageOps.grayscale(img)
 
-            new_extracted_text = pytesseract.image_to_string(img, lang=self.image_lang_code).strip()
-            new_extracted_text = " ".join(new_extracted_text.split())
-            print(f"EXTRACTED TEXT: [{new_extracted_text}]")
+                new_extracted_text = pytesseract.image_to_string(img, lang=self.image_lang_code).strip()
+                new_extracted_text = " ".join(new_extracted_text.split())
+                print(f"EXTRACTED TEXT: [{new_extracted_text}]")
 
-            if len(new_extracted_text) < 1 or len(new_extracted_text) > 4999:
-                continue
+                if len(new_extracted_text) < 1 or len(new_extracted_text) > 4999:
+                    continue
 
-            if self.current_extracted_text != new_extracted_text and new_extracted_text:
-                print(f"Translating: [{new_extracted_text}] of len[{len(new_extracted_text)}]")
-                self.current_extracted_text = new_extracted_text
+                if self.current_extracted_text != new_extracted_text and new_extracted_text:
+                    print(f"Translating: [{new_extracted_text}] of len[{len(new_extracted_text)}]")
+                    self.current_extracted_text = new_extracted_text
 
-                translated_text = ""
-                print(self.img_lang, self.trans_lang)
-                if self.translator_engine == "GoogleTranslator":
+                    translated_text = ""
+                    print(self.img_lang, self.trans_lang)
                     try:
-                        translated_text = GoogleTranslator(source='auto', target=self.trans_lang_code).translate(
-                            new_extracted_text)
+                        if self.translator_engine == "GoogleTranslator":
+                            translated_text = GoogleTranslator(source='auto', target=self.trans_lang_code).translate(new_extracted_text)
+                        elif self.translator_engine == "PonsTranslator":
+                            translated_text = PonsTranslator(source=self.img_lang, target=self.trans_lang).translate(new_extracted_text)
+                        elif self.translator_engine == "LingueeTranslator":
+                            translated_text = LingueeTranslator(source=self.img_lang, target=self.trans_lang).translate(new_extracted_text)
+                        else:
+                            translated_text = MyMemoryTranslator(source=self.img_lang, target=self.trans_lang).translate(new_extracted_text)
                         print(f"TRANSLATED TEXT: [{translated_text}]")
-                    except Exception:
-                        print("unsupported by GoogleTranslate")
-                elif self.translator_engine == "PonsTranslator":
-                    try:
-                        translated_text = PonsTranslator(source=self.img_lang, target=self.trans_lang).translate(
-                            new_extracted_text)
-                        print(f"TRANSLATED TEXT: [{translated_text}]")
-                    except Exception:
-                        print("unsupported by PonsTranslator")
-                elif self.translator_engine == "LingueeTranslator":
-                    try:
-                        translated_text = LingueeTranslator(source=self.img_lang, target=self.trans_lang).translate(
-                            new_extracted_text)
-                        print(f"TRANSLATED TEXT: [{translated_text}]")
-                    except Exception:
-                        print("unsupported by LingueeTranslator")
-                else:
-                    try:
-                        translated_text = MyMemoryTranslator(source=self.img_lang, target=self.trans_lang).translate(
-                            new_extracted_text)
-                        print(f"TRANSLATED TEXT: [{translated_text}]")
-                    except Exception:
-                        print("unsupported by MyMemoryTranslator")
+                    except Exception as e:
+                        print(f"Translation error: {e}")
 
-                self.ui.translated_text_label.setText(translated_text)
-                if self.is_text2speech_enabled:
-                    print('🔊')
-                    self.engine = QTextToSpeech(QTextToSpeech.availableEngines()[0])
-                    self.engine.setLocale(get_locale(self.trans_lang_code))
-                    self.engine.say(translated_text)
-
-                    # time.sleep(2)
-
-            mutex.unlock()
-
+                    self.ui.translated_text_label.setText(translated_text)
+                    if self.is_text2speech_enabled:
+                        print('🔊')
+                        self.engine = QTextToSpeech(QTextToSpeech.availableEngines()[0])
+                        self.engine.setLocale(get_locale(self.trans_lang_code))
+                        self.engine.say(translated_text)
+            finally:
+                mutex.unlock()
+        self.finished.emit()
 
 class MyWidget(QtWidgets.QWidget):
     def __init__(self):
@@ -152,17 +137,23 @@ class MyWidget(QtWidgets.QWidget):
         self.close()
 
     def closeEvent(self, event):
-        QtWidgets.QApplication.setOverrideCursor(
-            QtGui.QCursor(QtCore.Qt.CursorShape.ArrowCursor)
-        )
-
+        QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.CursorShape.ArrowCursor))
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication([""])
     window = MyWidget()
-    QtWidgets.QApplication.setOverrideCursor(
-        QtGui.QCursor(QtCore.Qt.CursorShape.CrossCursor)
-    )
+    QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.CursorShape.CrossCursor))
     window.show()
+
+    # Set up and start the worker thread
+    worker = Worker(window, "eng", "de", True, window, "GoogleTranslator", "en", "de")
+    thread = QtCore.QThread()
+    worker.moveToThread(thread)
+    thread.started.connect(worker.run)
+    worker.finished.connect(thread.quit)
+    worker.finished.connect(worker.deleteLater)
+    thread.finished.connect(thread.deleteLater)
+    thread.start()
+
     app.aboutToQuit.connect(app.deleteLater)
     app.exec()
